@@ -75,6 +75,14 @@ App(
 )
 
 App(
+    appid="mensacard_parser",
+    apptype=FlipperAppType.PLUGIN,
+    entry_point="mensacard_plugin_ep",
+    targets=["f7"],
+    requires=["nfc"],
+)
+
+App(
     appid="myki_parser",
     apptype=FlipperAppType.PLUGIN,
     entry_point="myki_plugin_ep",
