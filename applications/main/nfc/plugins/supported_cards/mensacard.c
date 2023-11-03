@@ -69,7 +69,7 @@ static bool mensacard_parse(const NfcDevice* device, FuriString* parsed_data) {
 
     furi_string_cat_printf(
         parsed_data,
-        "Mensa Card\n%llu\n\n",
+        "\e#Mensa Card\n%llu\n",
         parseUid(
             device_data->iso14443_4a_data->iso14443_3a_data->uid,
             device_data->iso14443_4a_data->iso14443_3a_data->uid_len));
@@ -77,6 +77,15 @@ static bool mensacard_parse(const NfcDevice* device, FuriString* parsed_data) {
     const char* data = simple_array_cget_data(file_data->data);
 
     furi_string_cat_printf(parsed_data, "Balance: %.2f EUR\n", rawDataToDouble(data));
+
+    //Hack: This seems to not be set on all cards all the time. Investigate...
+    if(file_settings->value.limited_credit_value != file_settings->value.hi_limit) {
+        furi_string_cat_printf(
+            parsed_data,
+            "Last Paid: %.2f EUR\n",
+            (double)file_settings->value.limited_credit_value / 1000);
+    }
+
     return true;
 }
 
