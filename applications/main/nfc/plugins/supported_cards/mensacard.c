@@ -28,15 +28,19 @@ static const MfDesfireApplicationId mensacard_app_id = {.data = {0x5f, 0x84, 0x1
 
 static const MfDesfireFileId mensacard_file_id = 0x01;
 
-static double rawDataToDouble(const char* data) {
-    if(data == 0) {
-        return 0.0;
-    }
-    unsigned int value = data[0] | (data[1] << 8) | (data[2] << 16) | (data[3] << 24);
+static double mensacard_uint_to_currency(uint32_t value) {
     return (double)value / 1000;
 }
 
-static uint64_t parseUid(uint8_t raw_uid[], uint8_t uid_len) {
+static double mensacard_bytes_to_currency(const char* data) {
+    if(data == NULL) {
+        return NAN;
+    }
+    uint32_t value = data[0] | (data[1] << 8) | (data[2] << 16) | (data[3] << 24);
+    return mensacard_uint_to_currency(value);
+}
+
+static uint64_t mensacard_parse_uid(uint8_t raw_uid[], uint8_t uid_len) {
     assert(uid_len <= 8);
     uint64_t uid = 0;
     for(size_t i = 0; i < uid_len; i++) {
@@ -70,22 +74,17 @@ static bool mensacard_parse(const NfcDevice* device, FuriString* parsed_data) {
     furi_string_cat_printf(
         parsed_data,
         "\e#Mensa Card\n%llu\n",
-        parseUid(
+        mensacard_parse_uid(
             device_data->iso14443_4a_data->iso14443_3a_data->uid,
             device_data->iso14443_4a_data->iso14443_3a_data->uid_len));
 
     const char* data = simple_array_cget_data(file_data->data);
 
-    furi_string_cat_printf(parsed_data, "Balance: %.2f EUR\n", rawDataToDouble(data));
-
-    //Hack: This seems to not be set on all cards all the time. Investigate...
-    if(file_settings->value.limited_credit_value != file_settings->value.hi_limit) {
-        furi_string_cat_printf(
-            parsed_data,
-            "Last Paid: %.2f EUR\n",
-            (double)file_settings->value.limited_credit_value / 1000);
-    }
-
+    furi_string_cat_printf(
+        parsed_data,
+        "Balance: %.2f EUR\nLast Paid: %.2f EUR",
+        mensacard_bytes_to_currency(data),
+        mensacard_uint_to_currency(file_settings->value.limited_credit_value));
     return true;
 }
 
